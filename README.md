@@ -1,11 +1,14 @@
 # SDDS Text Display Spike
 
 ## 🔗 Overview  
-This extension builds on [SDDS](https://github.com/mLamneck/SDDS) and enables you to create a generic user interface for an LCD text display with just a few lines of code.
-The UI structures variables and their values in an intuitive way, allowing easy navigation and value editing in various formats.
+This extension builds on [SDDS](https://github.com/mLamneck/SDDS) and enables you to create a 
+generic user interface for an LCD text display with just a few lines of code. The UI structures 
+variables and their values in an intuitive way, allowing easy navigation and value editing in various formats. 
 If you're not familiar with SDDS, check out the [documentation](https://github.com/mLamneck/SDDS?tab=readme-ov-file#documentation) first.  
 
-Currently, we provide our own implementation for `CrystalFontz635` displays. Additionally, we support all displays compatible with the [LiquidCrystal](https://github.com/arduino-libraries/LiquidCrystal) library.  
+Currently, we provide our own implementation for `CrystalFontz635` displays. Additionally, we 
+support all displays compatible with the [LiquidCrystal](https://github.com/arduino-libraries/LiquidCrystal) 
+library.  
 
 > **Note:** LiquidCrystal is licensed under LGPL. Due to its more restrictive licensing model, you must install it manually. Make sure to comply with the license requirements.  
 
@@ -20,6 +23,20 @@ Currently, we provide our own implementation for `CrystalFontz635` displays. Add
   - CrystalFontz LCD
   - all displays working with LiquidCrystal lib
 - **Optimized performance** through screen mirroring: Only changes are transmitted
+
+## Demo
+
+This demo is made in our simulation in the terminal of VS Code emulating a display with 
+4x20 Characters. We use the arrow keys on the keyboard for the navigation. It shows editing of
+* Hex values
+* binary values
+* time
+* enums
+Note also how the cursor position and the vertical scroll position is restored for every submenu.
+<p align="center">
+  <img src="assets/consoleDemo.gif">
+</p>
+
 
 ## 🛠 Installation
 
@@ -51,7 +68,12 @@ Happy coding with PlatformIO!
 
 ## ⚖️ Getting Started
 
-The following example code is taken from [SDDS](https://github.com/mLamneck/SDDS). It can turn the bord led on/off, let it blink with adjustable intervals. The state can be saved into non-volatile memory. You can find a lot of information about the example and the concepts of sdds on the original page. Here we assume you are already familiar with the concept. You should have a display properly connected to your board. This examples uses a `CrystalFontz CFA635` in UART configuration. It needs a power supply of 5V and RX, TX of an UART, so a total of 4 wires. In this example we use Serial2 for the display and the default Serial for our serialSpike. But this is up to you. 
+The following example code is taken from [SDDS](https://github.com/mLamneck/SDDS). It can turn the bord led on/off, let it blink with adjustable intervals.
+The state can be saved into non-volatile memory. You can find a lot of information about the example and the concepts of sdds on the original page.
+Here we assume you are already familiar with the concept. You should have a display properly 
+connected to your board. This examples uses a `CrystalFontz CFA635` in UART configuration. It 
+needs a power supply of 5V/GND and RX, TX of an UART, so a total of 4 wires. In this example we 
+use Serial2 for the display and the default Serial for our serialSpike. But this is up to you. 
 
 ```cpp
 #include "uTypedef.h"
@@ -113,7 +135,7 @@ TserialSpike serialHandler(userStruct,115200);
 #include "uTextDisplaySpike.h"
 #include "uCrystalFontzCFA635.h"
 typedef sdds::textDisplaySpike::TcrystalFontzCFA635<4, 20, Stream> Tdisplay;
-Tdisplay disp(&Serial2);		//use the seial your display is connceted to
+Tdisplay disp(&Serial2);		//use the serial your display is connceted to
 TtextDisplaySpike<Tdisplay> tds(userStruct,disp);
 //***************************************************
 
@@ -129,7 +151,8 @@ void loop(){
 
 ## 📚 How to use the code with other displays
 
-There are a few levels ob abstraction that should make it fairly easy to support new types of displays, especially if you have already a driver for it. 
+There are a few levels ob abstraction that should make it fairly easy to support new types of 
+displays, especially if you have already a driver for it. 
 
 The functions we need from this drivers are.
 
@@ -137,11 +160,19 @@ The functions we need from this drivers are.
 * writeStrToPosition
 * clearScreen
 
-Additionally we need a function to read the input (pressed keys or rotary encoder). This is done by implementing a function `readKey` and by providing a mapping for the keys. We will see how that looks like in a minute.Let's start with an examples.
+Additionally we need a function to read the input (pressed keys or rotary encoder). This is done
+by implementing a function `readKey` and by providing a mapping for the keys. We will see how 
+that looks like in a minute.Let's start with an examples.
 
 ### Console Display for windows
 
-For the developement we have used a virtual display in the terminal of our developement environment (The programm was running as a console application on windows). So we need to implement the methods mentioned above to write to the console. Let's aks the KI of your choice to implement these 3 functions for us. "Please provide 3 methods ... to set the cursor in a console application on windows using c++,...". In my case, after some back and forth, it came up with the following. I aksed about reading the keyboard as well, because we need it for the navigation anyway. Specifically we need 6 Keys: UP, DOWN, LEFT, RIGHT, ENTER, ESC.
+For the developement we have used a virtual display in the terminal of our developement 
+environment (The programm was running as a console application on windows). So we need to 
+implement the methods mentioned above to write to the console. Let's aks the KI of your choice 
+to implement these 3 functions for us. "Please provide 3 methods ... to set the cursor in a 
+console application on windows using c++,...". In my case, after some back and forth, it came 
+up with the following. I aksed about reading the keyboard as well, because we need it for the 
+navigation anyway. Specifically we need 6 Keys: UP, DOWN, LEFT, RIGHT, ENTER, ESC.
 
 ```C++
 
@@ -170,11 +201,19 @@ int readKey(){
 }
 ```
 
-We give it a try in a simple hello world application and it works. No we have everything we need to implement the new class for our `textDisplaySpike`. We create a new file `uConsoleDisplay.h` with the typical include guards and the includes provided from the AI. We put everything in a namespace sdds::textDisplaySpike. You don't have to do it, but it helps to avoid naming conflicts when having a lot of files. We create a class TconsoleDisplay which inherits from TabstractDisplay. TabstractDisplay is a template class and expects 2 parameters.
+We give it a try in a simple hello world application and it works. Now we have everything we 
+need to implement the new class for our `textDisplaySpike`. We create a new file 
+`uConsoleDisplay.h` with the typical include guards and the includes provided from the AI. 
+We put everything in a namespace sdds::textDisplaySpike. You don't have to do it, but it helps 
+to avoid naming conflicts when having a lot of files. We create a class TconsoleDisplay which 
+inherits from TabstractDisplay. TabstractDisplay is a template class and expects 2 parameters.
 * the number of rows the display has
 * the number of characters in one row.
 
-In our case we are not really limited but we want to emulate some real display and maybe use it to debug different displays. That's why we make our TconsoleDisplay a template class itself. This way we can decide later how many rows and columns we have. We copy the functions provided by the AI into the class. Now we have to implement the 3 functions mentioned above:
+In our case we are not really limited but we want to emulate some real display and maybe use it
+to debug different displays. That's why we make our TconsoleDisplay a template class itself. 
+This way we can decide later how many rows and columns we have. We copy the functions provided 
+by the AI into the class. Now we have to implement the 3 functions mentioned above:
 
 ```C++
 
@@ -197,7 +236,11 @@ void doUpdateRow(TrowChanges _changes) override {
 }
 ```
 
-The implementation of these funtions is now very easy, we just call the functions provided by the AI (for other displays provided by a library for that display). After the function has been called, we have to call this->onTaskDone() in order to handshake the operation with the base class. The `readKey` method just returns the key pressed on the keyboard. We provide constants for the keys the `textDisplaySpike` is interested in. The final class looks like this.
+The implementation of these funtions is now very easy, we just call the functions provided 
+by the AI (for other displays provided by a library for that display). After the function has
+been called, we have to call this->onTaskDone() in order to handshake the operation with the
+base class. The `readKey` method just returns the key pressed on the keyboard. We provide 
+constants for the keys the `textDisplaySpike` is interested in. The final class looks like this.
 
 
 ```C++
@@ -273,24 +316,28 @@ Now we can use it like so:
 TuserStruct userStruct;
 
 
-//adding the dislay funtionality to our existing code
+//adding the display funtionality to our existing code
 typedef sdds::textDisplaySpike::TconsoleDisplay<4, 20> TconsoleDisplay;
 TconsoleDisplay display;
 TtextDisplaySpike<TconsoleDisplay> tds(userStruct,display);
 ```
 
-First of all we provide a specific definition of our TconsoleDisplay (with a specific number of rows and columns) by the typedef in the first line. Next we create an instance of this display. And last but not least we create our TtextDisplaySpike with this specific display to work on our userStruct.
+First of all we provide a specific definition of our TconsoleDisplay (with a specific number of 
+rows and columns) by the typedef in the first line. Next we create an instance of this display. 
+And last but not least we create our TtextDisplaySpike with this specific display to work on our
+userStruct.
 
 ### TextDisplaySpike using LyquidCrystal library for Arduino
 
-The LiquidCrystal library allows you to control LCD displays that are compatible with the Hitachi HD44780 driver. There are many of them out there, and you can usually tell them by the 16-pin interface.
+The LiquidCrystal library allows you to control a lot of different LCD displays.
 
 > **Note**:
 > The following is not tested! It has not even been compiled. So there might be some issues with it. 
 > But it should be easy to make it work.
 
-Like said, the libray can be used for a lot of displays, so in fact if we provide a wrapper for our `TextDisplaySpike`, this can be used for a lot of displays as well. 
-We start again with a new file `uLiquidCrystal4TDS.h` (LiquidCrystal for Text Display Spike).
+Like said, the libray can be used for a lot of displays, so in fact if we provide a wrapper for
+ our `TextDisplaySpike`, this can be used for a lot of displays as well. We start again with a 
+ new file `uLiquidCrystal4TDS.h` (LiquidCrystal for Text Display Spike).
 
 ```C++
 //include guard...
@@ -395,6 +442,9 @@ namespace sdds{
 	}
 }
 ```
+Note that we did the reading of the keys in a separate class and implement it in our new class 
+with multiple inheritance. This makes the part reusable (maybe we want to write a driver for 
+another displays and we want to read the keys from gpio as well). This way 
 
 The main thing we are doing here is to implement the 3 methods
 * doSetCursor
