@@ -137,9 +137,9 @@ namespace sdds{
 					Fstream = _stream;
 
 					FreadTimer.start(100);
-					on(FreadTimer){ receive(); };
-					on(FwriteTimer){ transmit(); };
-					on(FresponseTimeout){ onResponseTimeout(); };
+					on(FreadTimer){ static_cast<TcrystalFontzCFA635*>(_self)->receive(); };
+					on(FwriteTimer){ static_cast<TcrystalFontzCFA635*>(_self)->transmit(); };
+					on(FresponseTimeout){ static_cast<TcrystalFontzCFA635*>(_self)->onResponseTimeout(); };
 				}
 			private:
 				struct CMD{

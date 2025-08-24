@@ -2,15 +2,15 @@
 #define UEDITOR_H
 
 #include <uTypedef.h>
-#include <uMemoryUtils.h>
 
-#include <cmath>		//std::pow
-#include <cstring>		//strlen
-#include <algorithm>	//std::max, std::min
+//Dear AVR-GCC, thanks for keeping C++ interesting: every line of portable code becomes a new adventure here.
+#include "uMmath.h"
+//#include <cstring>	//strlen	not available on some platforms (Arduino i.e. Uno)
+#include <string.h>		//strlen
+#include <new>			//required for AVR-GCC
 
 namespace sdds{
 	namespace textDisplaySpike{
-
 		/**
 		 * @brief TeditorBase base class for all editors
 		 */
@@ -20,10 +20,11 @@ namespace sdds{
 				Tdescr* Fdescr;
 				bool FeditDone = false;
 			public:
-				TeditorBase(Tdescr* _descr, int _displayWidth){
+				virtual void init(Tdescr* _descr, int _displayWidth){
 					Fdescr = _descr;
 					FdisplayWidth = _displayWidth;
 				}
+
 				virtual void keyLeft() {}; 
 				virtual void keyRight() {}; 
 				virtual void keyUp() = 0; 
@@ -67,7 +68,8 @@ namespace sdds{
 			dtypes::uint32 FordVal;
 			dtypes::uint32 FenCnt;
 			public:
-				TenumEditor(Tdescr* _enum, int _dispWidth) : TeditorBase(_enum,_dispWidth){
+				void init(Tdescr* _enum, int _dispWidth) override{
+					TeditorBase::init(_enum,_dispWidth);
 					FordVal = 0;
 					memcpy(&FordVal,_enum->pValue(),_enum->valSize());
 					FenCnt = 0;
@@ -131,7 +133,8 @@ namespace sdds{
 			int FmaxCursorPos;
 
 			public:
-				TintEditor(Tdescr* _d, const int _displayWith) : TeditorBase(_d,_displayWith){
+				void init(Tdescr* _d, const int _displayWith) override{
+					TeditorBase::init(_d,_displayWith);
 					FdisplayWidth = _displayWith;
 					Fdescr = _d;
 					Fint = *static_cast<TdescrType*>(_d);
@@ -144,15 +147,14 @@ namespace sdds{
 				}
 
 			private:
-
 				TworkInteger getWeight(){
 					switch(Fdescr->showOption()){
 						case sdds::opt::showHex:
-							return static_cast<TworkInteger>(std::pow(16, FcursorPos));
+							return static_cast<TworkInteger>(mmath::pow(16, FcursorPos));
 						case sdds::opt::showBin:
-							return static_cast<TworkInteger>(std::pow(2, FcursorPos));
+							return static_cast<TworkInteger>(mmath::pow(2, FcursorPos));
 					}
-					return static_cast<TworkInteger>(std::pow(10, FcursorPos));
+					return static_cast<TworkInteger>(mmath::pow(10, FcursorPos));
 				}
 
 				void increaseDigit() {
@@ -255,7 +257,8 @@ namespace sdds{
 			};
 
 			public:
-				TtimeEditor(Tdescr* _d, int _dispWidth) : TeditorBase(_d,_dispWidth){
+				void init(Tdescr* _d, int _dispWidth) override{
+					TeditorBase::init(_d,_dispWidth);
 					Ftime = *static_cast<Ttime*>(_d);
 				}
 		};
@@ -264,43 +267,58 @@ namespace sdds{
 		 * @brief TeditorContainer SingletonContainer for all possible editors
 		 * 
 		 */
-		using sdds::memUtils::TsingletonContainer;
-		class TeditorContainer: public TsingletonContainer<TeditorBase
-			,TenumEditor
-			,TintEditor<Tuint8>
-			,TintEditor<Tuint16>
-			,TintEditor<Tuint32>
-			,TintEditor<Tint8>
-			,TintEditor<Tint16>
-			,TintEditor<Tint32>
-			,TintEditor<Tfloat32>
-			,TtimeEditor
-			> 
-		{
+		class TeditorContainer {
+			private:
+				union Tcontainer{
+					Tcontainer(){};
+  					~Tcontainer(){};
+
+					TenumEditor FenumEditor;
+					TintEditor<Tuint8> Fuint8Editor;
+					TintEditor<Tuint16> Fuint16Editor;
+					TintEditor<Tuint32> Fuint32Editor;
+					TintEditor<Tint8> Fint8Editor;
+					TintEditor<Tint16> Fint16Editor;
+					TintEditor<Tint32> Fint32Editor;
+					TintEditor<Tfloat32> Ffloat32Editor;
+					TtimeEditor FtimeEditor;
+				};
+				Tcontainer Fcontainer;
+				TeditorBase* Finstance = nullptr;
 			public:
+				TeditorBase* getInstance(){ return Finstance; }
+				void destroy(){
+					if (Finstance == nullptr) return;
+
+					Finstance->~TeditorBase(); 
+					Finstance = nullptr;
+				}
+
 				TeditorBase* create(Tdescr* _d, const int _displayWidth){
-					switch(_d->type()){
-						case sdds::Ttype::INT8:
-							return TsingletonContainer::create<TintEditor<Tint8>>(_d,_displayWidth);
-						case sdds::Ttype::INT16:
-							return TsingletonContainer::create<TintEditor<Tint16>>(_d,_displayWidth);
-						case sdds::Ttype::INT32:
-							return TsingletonContainer::create<TintEditor<Tint32>>(_d,_displayWidth);
-						case sdds::Ttype::UINT8:
-							return TsingletonContainer::create<TintEditor<Tuint8>>(_d,_displayWidth);
-						case sdds::Ttype::UINT16:
-							return TsingletonContainer::create<TintEditor<Tuint16>>(_d,_displayWidth);
-						case sdds::Ttype::UINT32:
-							return TsingletonContainer::create<TintEditor<Tuint32>>(_d,_displayWidth);
-						case sdds::Ttype::ENUM:
-							return TsingletonContainer::create<TenumEditor>(_d,_displayWidth);
-						case sdds::Ttype::FLOAT32:
-							return TsingletonContainer::create<TintEditor<Tfloat32>>(_d,_displayWidth);
-						case sdds::Ttype::TIME:
-							return TsingletonContainer::create<TtimeEditor>(_d,_displayWidth);
-						default:
-							return nullptr;
-					}
+					destroy();
+
+					auto t = _d->type();
+					if (t == sdds::Ttype::INT8) 
+						Finstance = new (&Fcontainer.Fint8Editor) TintEditor<Tint8>;
+					else if (t == sdds::Ttype::INT16) 
+						Finstance = new (&Fcontainer.Fint16Editor) TintEditor<Tint16>;
+					else if (t == sdds::Ttype::INT32) 
+						Finstance = new (&Fcontainer.Fint32Editor) TintEditor<Tint32>;
+					else if (t == sdds::Ttype::UINT8) 
+						Finstance = new (&Fcontainer.Fuint8Editor) TintEditor<Tuint8>;
+					else if (t == sdds::Ttype::UINT16) 
+						Finstance = new (&Fcontainer.Fuint16Editor) TintEditor<Tuint16>;
+					else if (t == sdds::Ttype::UINT32) 
+						Finstance = new (&Fcontainer.Fuint32Editor) TintEditor<Tuint32>;
+					else if (t == sdds::Ttype::ENUM) 
+						Finstance = new (&Fcontainer.FenumEditor) TenumEditor;
+					else if (t == sdds::Ttype::FLOAT32) 
+						Finstance = new (&Fcontainer.Ffloat32Editor) TintEditor<Tfloat32>;
+					else
+						return nullptr;
+					
+					Finstance->init(_d,_displayWidth);
+					return Finstance;
 				}
 		};
 
