@@ -234,7 +234,13 @@ namespace sdds{
 				}
 				
 				void addData( const dtypes::uint8* _data, int _len){
-					memcpy(&FtxBuffer[FtxHead],_data,_len);
+					//memcpy(&FtxBuffer[FtxHead],_data,_len);
+					for (int i=0; i<_len; i++){
+						if (_data[i] == '_')
+							FtxBuffer[FtxHead+i] = 196;
+						else
+							FtxBuffer[FtxHead+i] = _data[i];
+					}
 					FtxHead+=_len;
 				}
 
@@ -354,7 +360,8 @@ namespace sdds{
 					FretryCnt = 0;
 					transmit();
 				}
-				
+
+			public:
 				//"0x0B 0x02 0x00 0x00 0x73 0x89 " for 0,0
 				void doSetCursor(const TcursorInterface _cursor) override{ 
 					initSend(CMD::SET_CURSOR);
@@ -381,7 +388,7 @@ namespace sdds{
 					addData(reinterpret_cast<const dtypes::uint8*>(_changes._buffer),_changes.n);
 					sendCmd();
 				}
-			public:
+
 				int readKey(){
 					return Fkeys.pop();
 				}
